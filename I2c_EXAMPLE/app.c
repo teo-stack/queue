@@ -98,7 +98,7 @@ main_app( void )
 	for( ;; )
     {
         ( void )eMBPoll(  );
-        vMBPortTimersDelay(100);
+        vMBPortTimersDelay(1000);
         //check1=I2C_write(I2C1,MPU,fetch,2,1,NO_END);// thu tu la ten I2C/dia chi slave/buffer doc hoac ghi/so byte doc hoac ghi/co ket thuc duong truyen khong hay tiep tuc?
 
         //ghi gia tri doc vao val, gui lenh iu cau xuat do am nhiet do
