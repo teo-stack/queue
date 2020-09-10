@@ -108,10 +108,12 @@ main_app( void )
     {
         vMBPortTimersDelay(1000);
         error = SHT_Read_Raw(&temp,&humid);
-        tem_int=temp;
-        humid_int=humid;
-        xprintf("Nhiet do: %d\n",tem_int);
-        xprintf("Do am: %d\n",humid_int);
+        //tem_int=temp;
+        //humid_int=humid;
+        xprintf("Nhiet do: ");
+        printfloat(temp);
+        xprintf("Do am: ");
+        printfloat(humid);
         xprintf("THIS VALUE != 0 IS ERROR: %d\n",error);
         xprintf("\n");
         while(error!=0) error=SHT_Reset();
@@ -304,4 +306,10 @@ uint8_t I2C_Soft_Read(uint8_t address,uint8_t* buffer,uint8_t num,long timeout,u
     }
     if(end) generate_stop();
     return error;
+}
+void printfloat(float val_float){
+    int val_int[2];
+    val_int[0]=val_float;
+    val_int[1]=(float)(val_float*100-val_int[0]*100);
+    xprintf("%d.%d\n",val_int[0],val_int[1]);
 }

@@ -30,7 +30,7 @@ extern void I2C_Soft_int();
 extern uint8_t val[20];
 extern uint8_t fetch[20];
 extern uint8_t setup[20];
-
+void printfloat(float val_float);
 #define I2C_Chanel      		I2C1
 #define MPU                     0x68
 #define ACCEL_XOUT_H            0x3B

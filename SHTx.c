@@ -44,8 +44,10 @@ int SHT_Read_Raw(float *temp,float *humid){
     error = SHT_CRC_check(dataSHT->CRC_temp,dataSHT->tempval,2);
     error += SHT_CRC_check(dataSHT->CRC_humid,dataSHT->humidval,2);
     if(error==0){
-      *temp=175*((dataSHT->tempval[0]<<8)|dataSHT->tempval[1])/0xFFFF-45;
-       *humid=100*((dataSHT->humidval[0]<<8)|dataSHT->humidval[1])/0xFFFF;}
+      *temp=(float)((dataSHT->tempval[0]<<8)|dataSHT->tempval[1]);
+      *temp=175*(*temp/0xFFFF)-45;
+        *humid=(float)((dataSHT->humidval[0]<<8)|dataSHT->humidval[1]);
+       *humid=100*(*humid)/0xFFFF;}
 }
 
     return error;
