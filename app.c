@@ -33,6 +33,7 @@
 #include "math.h"
 #include "io_cfg.h"
 #include "xprintf.h"
+#include "SHTx.h"
 /* ----------------------- Defines ------------------------------------------*/
 #define REG_INPUT_START 1000
 #define REG_INPUT_NREGS 4
@@ -41,7 +42,12 @@
 uint8_t val[20],check1,check2;//buffer chua gia tri thanh ghi va check fuction thuc hien thanh cong
 uint8_t fetch[20]={0x2C,0x06};// High Repeatability - Enable Clock stretching
 //https://www.mouser.com/datasheet/2/682/Sensirion_Humidity_Sensors_SHT3x_Datasheet_digital-971521.pdf
-int temp,humid;
+float temp,humid;
+int tem_int,humid_int;
+char buffer[6];
+Raw_SHT_Data *dataSHT;
+int SHT_address_store;
+int error=0;
 /* ----------------------- Static variables ---------------------------------*/
 static USHORT   usRegInputStart = REG_INPUT_START;
 static USHORT   usRegInputBuf[REG_INPUT_NREGS];
@@ -76,7 +82,7 @@ main_app( void )
 {   	uart1_init(115200);
         xprintf_stream_io_out = uart1_putc;
         xprintf("Hi :) !!!\n");
-
+        dataSHT=(Raw_SHT_Data*)val;
     //eMBErrorCode    eStatus;
     //(void)eStatus;
 
@@ -97,33 +103,18 @@ main_app( void )
 	/* Enable the Modbus Protocol Stack. */
     //eStatus = eMBEnable(  );
     //Init I2C 2 mode fast 400KHZ va low 100KHZ
-    //I2C1_Master_Config(FASTMODE);
-        //I2C_write(I2C1,MPU,setup,2,10,END);
-    I2C_Soft_int();
+       SHT_init(SHT_default_address);
 	for( ;; )
     {
-        //( void )eMBPoll(  );
-
-        check1=I2C_Soft_Write(SHTaddress,fetch,2,0);// thu tu la ten I2C/dia chi slave/buffer doc hoac ghi/so byte doc hoac ghi/co ket thuc duong truyen khong hay tiep tuc?
-        check2=I2C_Soft_Read(SHTaddress,val,6,10,1);
-        //vMBPortTimersDelay(100);
-        //check2=I2C_read(I2C1,SHTaddress,val,6,1);
-        //ghi gia tri doc vao val, gui lenh iu cau xuat do am nhiet do
-        //check1=I2C_write(I2C1,SHTaddress,fetch,2,10,NO_END);
-        //check2=I2C_read(I2C1,SHTaddress,val,6,10,END);
         vMBPortTimersDelay(1000);
-        //tinh toan gia tri
-        temp=175*((val[0]<<8)|val[1])/0xFFFF-45;
-        val[0]=temp;
-        humid=100*((val[3]<<8)|val[4])/0xFFFF;
-        val[3]=humid;
-
-        xprintf("%d  %d  %d  %d\n",val[0],val[3],check1,check2);
-        //usRegInputBuf[0] = 0;//gia tri nhiet
-        //usRegInputBuf[1] = 0;//gia tri do am
-        //usRegInputBuf[2] = 0;//check ghi I2C thanh cong khong //1 la Ok //0 la Fail
-        //usRegInputBuf[3] = 0;//check doc I2C thanh cong khong
-        //usRegInputBuf[3] = I2C_scan(I2C1); // scan đia chi salve gan 0 nhat
+        error = SHT_Read_Raw(&temp,&humid);
+        tem_int=temp;
+        humid_int=humid;
+        xprintf("Nhiet do: %d\n",tem_int);
+        xprintf("Do am: %d\n",humid_int);
+        xprintf("THIS VALUE != 0 IS ERROR: %d\n",error);
+        xprintf("\n");
+        while(error!=0) error=SHT_Reset();
         GPIO_WriteBit(GPIOA, GPIO_Pin_4,!GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_4));
     }
 }
@@ -293,7 +284,7 @@ uint8_t I2C_Soft_Write(uint8_t address,uint8_t* buffer,uint8_t num,uint8_t end){
     if(error) return 1;
     for(int i=0;i<num;i++){
     error=write_byte(*buffer++);
-    if(error) {return 2;break;}
+    if(error) {return 2;}
     }
     if(end) generate_stop();
     return error;
@@ -303,10 +294,13 @@ uint8_t I2C_Soft_Read(uint8_t address,uint8_t* buffer,uint8_t num,long timeout,u
     generate_start();
     error=write_byte((address<<1)|1);
     if(error) return 1;
+
     for(int i=0;i<num;i++){
-    if(i!=num-1) error=read_byte(buffer++,1,timeout);
-    else error=read_byte(buffer++,0,timeout);
-    if(error) {return 2;break;}
+    if(i!=num-1 && i!= 0) error=read_byte(buffer++,1,0);
+    else if(i==0) error=read_byte(buffer++,1,timeout);
+    else error=read_byte(buffer++,0,0);
+
+    if(error) {return 2;}
     }
     if(end) generate_stop();
     return error;
