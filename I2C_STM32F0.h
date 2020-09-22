@@ -16,14 +16,14 @@ typedef enum {FASTMODE = 0x10310309, LOWMODE = 0x30310309} SpeedMode;
 enum{FAIL=0,SUCCCESS=1};
 #define multitime  SystemCoreClock/1000
 
-extern uint8_t I2C_write(I2C_TypeDef* I2Cx,uint8_t address,uint8_t* buffer,uint8_t num,long timeout,FuncState state);
-extern uint8_t I2C_read(I2C_TypeDef* I2Cx,uint8_t address,uint8_t* buffer,uint8_t num,long timeout,FuncState state);
-extern uint8_t I2C_write_test(I2C_TypeDef* I2Cx,uint8_t address,uint8_t* buffer,uint8_t num_byte,FuncState state);
-extern uint8_t I2C_read_test(I2C_TypeDef* I2Cx,uint8_t address,uint8_t* buffer,uint8_t num,long timeout,FuncState state);
-extern uint8_t I2C_scan(I2C_TypeDef* I2Cx);
-extern void I2C1_Master_Config(SpeedMode mode);
-extern void I2C1_Deconfig(void);
-extern void I2C1_Reconfig(void);
+uint8_t I2C_write(I2C_TypeDef* I2Cx,uint8_t address,uint8_t* buffer,uint8_t num,long timeout,FuncState state);
+uint8_t I2C_read(I2C_TypeDef* I2Cx,uint8_t address,uint8_t* buffer,uint8_t num,long timeout,FuncState state);
+uint8_t I2C_write_test(I2C_TypeDef* I2Cx,uint8_t address,uint8_t* buffer,uint8_t num_byte,FuncState state);
+uint8_t I2C_read_test(I2C_TypeDef* I2Cx,uint8_t address,uint8_t* buffer,uint8_t num,long timeout,FuncState state);
+uint8_t I2C_scan(I2C_TypeDef* I2Cx);
+void I2C1_Master_Config(SpeedMode mode);
+void I2C1_Deconfig(void);
+void I2C1_Reconfig(void);
 #ifdef __cplusplus
 }
 #endif

@@ -5,45 +5,45 @@ uint8_t I2C_write(I2C_TypeDef* I2Cx,uint8_t address,uint8_t* buffer,uint8_t num_
     if(timeout==0){
         return FAIL;
     }
-else{
+    else{
         long timecount=timeout*multitime;
         I2C_TransferHandling(I2Cx,address<<1,num_byte,I2C_SoftEnd_Mode,I2C_Generate_Start_Write);
         while ((!I2C_GetFlagStatus(I2Cx,I2C_FLAG_TXIS))&&(--timecount));
         if(timecount==0) {
             return 2;}
         else{
-        for(int i=0;i<num_byte;i++){
-             I2C_SendData(I2Cx,*buffer++);
-             while (!I2C_GetFlagStatus(I2Cx,I2C_FLAG_TXE));
-        }
-        while (!I2C_GetFlagStatus(I2Cx,I2C_FLAG_TC));
-        I2C_GenerateSTOP(I2Cx, state);
-        while (!I2C_GetFlagStatus(I2Cx,I2C_FLAG_BUSY));
-        return SUCCESS;
+            for(int i=0;i<num_byte;i++){
+                I2C_SendData(I2Cx,*buffer++);
+                while (!I2C_GetFlagStatus(I2Cx,I2C_FLAG_TXE));
+            }
+            while (!I2C_GetFlagStatus(I2Cx,I2C_FLAG_TC));
+            I2C_GenerateSTOP(I2Cx, state);
+            while (!I2C_GetFlagStatus(I2Cx,I2C_FLAG_BUSY));
+            return SUCCESS;
         }
     }
-    }
+}
 
 //-----------------------I2C_write_test-------------------------//
 uint8_t I2C_write_test(I2C_TypeDef* I2Cx,uint8_t address,uint8_t* buffer,uint8_t num_byte,FuncState state){
     uint8_t error=0;
-        I2C_TransferHandling(I2Cx,address<<1,num_byte,I2C_SoftEnd_Mode,I2C_Generate_Start_Write);
-        while ((!I2C_GetFlagStatus(I2Cx,I2C_FLAG_TXIS))&&(!I2C_GetFlagStatus(I2Cx,I2C_FLAG_NACKF)));
-        if(I2C_GetFlagStatus(I2Cx,I2C_FLAG_NACKF)) error=1;
-        else{
+    I2C_TransferHandling(I2Cx,address<<1,num_byte,I2C_SoftEnd_Mode,I2C_Generate_Start_Write);
+    while ((!I2C_GetFlagStatus(I2Cx,I2C_FLAG_TXIS))&&(!I2C_GetFlagStatus(I2Cx,I2C_FLAG_NACKF)));
+    if(I2C_GetFlagStatus(I2Cx,I2C_FLAG_NACKF)) error=1;
+    else{
         for(int i=0;i<num_byte;i++){
-             I2C_SendData(I2Cx,*buffer++);
-             while ((!I2C_GetFlagStatus(I2Cx,I2C_FLAG_TXE)));
-        if(I2C_GetFlagStatus(I2Cx,I2C_FLAG_NACKF)) {
-            error=i+2;
-            break;
-        }
+            I2C_SendData(I2Cx,*buffer++);
+            while ((!I2C_GetFlagStatus(I2Cx,I2C_FLAG_TXE)));
+            if(I2C_GetFlagStatus(I2Cx,I2C_FLAG_NACKF)) {
+                error=i+2;
+                break;
+            }
         }
         if (I2C_GetFlagStatus(I2Cx,I2C_FLAG_TC) && error==0) I2C_GenerateSTOP(I2Cx, state);
         //while (!I2C_GetFlagStatus(I2Cx,I2C_FLAG_BUSY));
-        }
-    return error;
     }
+    return error;
+}
 
 //-----------------------I2C_read-------------------------//
 uint8_t I2C_read(I2C_TypeDef* I2Cx,uint8_t address,uint8_t* buffer,uint8_t num_byte,long timeout,FuncState state){
@@ -52,48 +52,48 @@ uint8_t I2C_read(I2C_TypeDef* I2Cx,uint8_t address,uint8_t* buffer,uint8_t num_b
     }
     else{
         long timecount=timeout*multitime;
-          I2C_TransferHandling(I2Cx,address<<1,num_byte,I2C_SoftEnd_Mode,I2C_Generate_Start_Read);
-             for(int i=0;i<num_byte;i++){
-             timecount=timeout*multitime;
-                while ((!I2C_GetFlagStatus(I2Cx,I2C_FLAG_RXNE))&&(--timecount));
-                if(timecount==0) break;
-                 *buffer++=I2C_ReceiveData(I2Cx);
-                 }
-            if(timecount==0) {
-                return 2;}
-            else{
+        I2C_TransferHandling(I2Cx,address<<1,num_byte,I2C_SoftEnd_Mode,I2C_Generate_Start_Read);
+        for(int i=0;i<num_byte;i++){
+            timecount=timeout*multitime;
+            while ((!I2C_GetFlagStatus(I2Cx,I2C_FLAG_RXNE))&&(--timecount));
+            if(timecount==0) break;
+            *buffer++=I2C_ReceiveData(I2Cx);
+        }
+        if(timecount==0) {
+            return 2;}
+        else{
             I2C_GenerateSTOP(I2Cx, state);
             while (!I2C_GetFlagStatus(I2Cx,I2C_FLAG_BUSY));
             return SUCCESS;
-            }
+        }
     }
 
 }
 //-----------------------I2C_read_test-------------------------//
 uint8_t I2C_read_test(I2C_TypeDef* I2Cx,uint8_t address,uint8_t* buffer,uint8_t num_byte,long timeout,FuncState state){
 
-uint8_t error=0;
+    uint8_t error=0;
     long timecount;
-      I2C_TransferHandling(I2Cx,address<<1,num_byte,I2C_SoftEnd_Mode,I2C_Generate_Start_Read);
-      if(I2C_GetFlagStatus(I2Cx,I2C_FLAG_NACKF)) return 1;
-         for(int i=0;i<num_byte;i++){
-         timecount=timeout*multitime;
-            while ((!I2C_GetFlagStatus(I2Cx,I2C_FLAG_RXNE))&&(--timecount));
-            if(timecount==0) {error=i+2;break;}
-             *buffer++=I2C_ReceiveData(I2Cx);
-             }
-        if(error==0) {I2C_GenerateSTOP(I2Cx, state);}
-        //while (!I2C_GetFlagStatus(I2Cx,I2C_FLAG_BUSY));}
-        return error;
+    I2C_TransferHandling(I2Cx,address<<1,num_byte,I2C_SoftEnd_Mode,I2C_Generate_Start_Read);
+    if(I2C_GetFlagStatus(I2Cx,I2C_FLAG_NACKF)) return 1;
+    for(int i=0;i<num_byte;i++){
+        timecount=timeout*multitime;
+        while ((!I2C_GetFlagStatus(I2Cx,I2C_FLAG_RXNE))&&(--timecount));
+        if(timecount==0) {error=i+2;break;}
+        *buffer++=I2C_ReceiveData(I2Cx);
     }
+    if(error==0) {I2C_GenerateSTOP(I2Cx, state);}
+    //while (!I2C_GetFlagStatus(I2Cx,I2C_FLAG_BUSY));}
+    return error;
+}
 //-----------------------I2C_scan-------------------------//
 uint8_t I2C_scan(I2C_TypeDef* I2Cx){
     uint8_t address,check=0,buf=0;
     for(address=0;address<128;address++){
- check=I2C_read(I2Cx,address,&buf,1,1,END);
- if(check) {return address;break;}
+        check=I2C_read(I2Cx,address,&buf,1,1,END);
+        if(check) {return address;break;}
     }
-   if(!check)  return 0xFF;
+    if(!check)  return 0xFF;
 }
 
 //-----------------------I21_Master_Config-------------------------//
@@ -130,12 +130,7 @@ void I2C1_Master_Config(SpeedMode mode){
 //----------------------I2C1_Deconfig-------------------//
 void I2C1_Deconfig(void){
 
-    GPIOlib_InitStructure.GPIO_Pin = GPIO_Pin_9 | GPIO_Pin_10;						//PA9 - SCL, PA10 - SDA
-    GPIOlib_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-    GPIOlib_InitStructure.GPIO_Mode = GPIO_Mode_AF;
-    GPIOlib_InitStructure.GPIO_OType = GPIO_OType_PP;
-    GPIOlib_InitStructure.GPIO_PuPd = GPIO_PuPd_DOWN;
-    GPIO_Init(GPIOA, &GPIOlib_InitStructure);
+I2C_SoftwareResetCmd(I2C1);
 
 }
 void I2C1_Reconfig(void){

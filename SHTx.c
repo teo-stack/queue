@@ -1,87 +1,208 @@
 #include <SHTx.h>
-int SHT_address_store;float temp_store,humid_store;
-void SHT_init(SHT_address address){
+int SHT_address_store,speed_store;float temp_store,humid_store;
+void SHT_init(SHT_address address,SpeedMode speed){
     SHT_address_store=address;
-    I2C1_Master_Config(FASTMODE);
+    speed_store=speed;
+    I2C1_Master_Config(speed_store);
 }
-int SHT_Reset(void){
+SHT_Error SHT_Hard_Reset(void){
+    SHT_Error error=NO_ERROR;
     I2C1_Deconfig();
     wait(1000);
-    //I2C1->ISR=0;
-    SHT_init(SHT_address_store);
-    wait(1000);
-    return SHT_Soft_Reset();
+    error = SHT_Soft_Reset();
+    return error;
 }
-int SHT_Write(SHT_command command, FuncState state){
-    int error=0;
-    char buffer[2];
+SHT_Error SHT_Write(uint16_t command , FuncState state){
+    SHT_Error error=NO_ERROR;
+    uint8_t buffer[2];
     buffer[0]=(command>>8) & 0xFF;
     buffer[1]=command & 0xFF;
     error = I2C_write_test(I2C1,SHT_address_store,buffer,2,state);
     return error;
 }
-int SHT_Read(char* buffer,long timeout,int nbr,FuncState state){
-    int error=0;
+SHT_Error SHT_Read(uint8_t* buffer,long timeout,int nbr,FuncState state){
+    SHT_Error error=NO_ERROR;
     error = I2C_read_test(I2C1,SHT_address_store,buffer,nbr,timeout,state);
     return error;
 }
-int SHT_CRC_check(int CRCval,char* data, char nbrOfBytes){
+SHT_Error SHT_CRC_check(int CRCval,uint8_t* data, uint8_t nbrOfBytes){
     int CRC_check=0;
-    int error=0;
+    SHT_Error error=NO_ERROR;
     CRC_check=SHT_CalcCrc(data,nbrOfBytes);
-    if(CRC_check!=CRCval) error=1;
+    if(CRC_check!=CRCval) error=CRC_ERROR;
     return error;
 }
-int SHT_Read_Raw(float *temp,float *humid){
-    char buffer[6];
+SHT_Error SHT_Read_ClockStr(float *temp,float *humid,int timeout,SHT_ClockStr_Mode mode){
+    uint8_t buffer[6];
     Raw_SHT_Data *dataSHT;
-    int error=0;
-    error = SHT_Write(SHT_HIGHREPEAT, NO_END);
-    if(error==0)
-    error = SHT_Read(buffer,50,6,END);
-    if(error==0){
-    dataSHT=(Raw_SHT_Data*)buffer;
-    error = SHT_CRC_check(dataSHT->CRC_temp,dataSHT->tempval,2);
-    error += SHT_CRC_check(dataSHT->CRC_humid,dataSHT->humidval,2);
-    if(error==0){
-      *temp=(float)((dataSHT->tempval[0]<<8)|dataSHT->tempval[1]);
-      *temp=175*(*temp/0xFFFF)-45;
-      *humid=(float)((dataSHT->humidval[0]<<8)|dataSHT->humidval[1]);
-      *humid=100*(*humid)/0xFFFF;}
-}
-
-    return error;
-}
-float SHT_Temp(){
-    return temp_store;
-}
-float SHT_Humid(){
-    return humid_store;
-}
-int SHT_CalcCrc(char* data, char nbrOfBytes)
-{
-  char bit;        // bit mask
-  char crc = 0xFF; // calculated checksum
-  char byteCtr;    // byte counter
-
-  // calculates 8-Bit checksum with given polynomial
-  for(byteCtr = 0; byteCtr < nbrOfBytes; byteCtr++)
-  {
-    crc ^= (data[byteCtr]);
-    for(bit = 8; bit > 0; --bit)
-    {
-      if(crc & 0x80) crc = (crc << 1) ^ POLYNOMIAL;
-      else           crc = (crc << 1);
+    SHT_Error error=NO_ERROR;
+    if(mode==CMD_MEAS_CLOCKSTR_L || mode==CMD_MEAS_CLOCKSTR_H || mode==CMD_MEAS_CLOCKSTR_M)
+        error = SHT_Write(mode, NO_END);
+    else
+        error = PARA_ERROR;
+    if(error==NO_ERROR)
+        error = SHT_Read(buffer,timeout,6,END);
+    if(error==NO_ERROR){
+        dataSHT=(Raw_SHT_Data*)buffer;
+        error = SHT_CRC_check(dataSHT->CRC_temp,dataSHT->tempval,2);
+        error |= SHT_CRC_check(dataSHT->CRC_humid,dataSHT->humidval,2);
     }
-  }
+    if(error==NO_ERROR){
+        *temp=SHT_Temp_Cal(((dataSHT->tempval[0]<<8)|dataSHT->tempval[1]));
+        *humid=SHT_Humid_Cal(((dataSHT->humidval[0]<<8)|dataSHT->humidval[1]));
+    }
 
-  return crc;
-}
-int SHT_Soft_Reset(void){
-    int error=0;
-    error = SHT_Write(CMD_SOFT_RESET, END);
-    if(error==0) wait(50);
     return error;
+}
+SHT_Error SHT_Read_Polling(float *temp,float *humid,int timeout,SHT_Polling_Mode mode){
+    uint8_t buffer[6];
+    Raw_SHT_Data *dataSHT;
+    SHT_Error error=NO_ERROR;
+    if(mode==CMD_MEAS_POLLING_H || mode==CMD_MEAS_POLLING_L || mode==CMD_MEAS_POLLING_M)
+        error = SHT_Write(mode, NO_END);
+    else
+        error = PARA_ERROR;
+    if(error==NO_ERROR){
+        while(timeout--)
+        {
+          error = SHT_Read(buffer,1,6,END);
+          if(error == NO_ERROR) break;
+          //wait(1);
+        }
+      }
+    if(error==NO_ERROR){
+        dataSHT=(Raw_SHT_Data*)buffer;
+        error = SHT_CRC_check(dataSHT->CRC_temp,dataSHT->tempval,2);
+        error |= SHT_CRC_check(dataSHT->CRC_humid,dataSHT->humidval,2);
+    }
+    if(error==NO_ERROR){
+        *temp=SHT_Temp_Cal(((dataSHT->tempval[0]<<8)|dataSHT->tempval[1]));
+        *humid=SHT_Humid_Cal(((dataSHT->humidval[0]<<8)|dataSHT->humidval[1]));
+    }
+
+    return error;
+}
+int SHT_CalcCrc(uint8_t* data, uint8_t nbrOfBytes)
+{
+    uint8_t bit;        // bit mask
+    uint8_t crc = 0xFF; // calculated checksum
+    uint8_t byteCtr;    // byte counter
+
+    // calculates 8-Bit checksum with given polynomial
+    for(byteCtr = 0; byteCtr < nbrOfBytes; byteCtr++)
+    {
+        crc ^= (data[byteCtr]);
+        for(bit = 8; bit > 0; --bit)
+        {
+            if(crc & 0x80) crc = (crc << 1) ^ POLYNOMIAL;
+            else           crc = (crc << 1);
+        }
+    }
+
+    return crc;
+}
+SHT_Error SHT_Soft_Reset(void){
+    SHT_Error error=NO_ERROR;
+    error = SHT_Write(CMD_SOFT_RESET, END);
+    if(error==NO_ERROR) wait(50);
+    return error;
+}
+SHT_Error SHT_Read_Status(uint16_t* status){
+    uint8_t buffer[3];
+    Raw_2B_Data *dataSHT;
+    SHT_Error error=NO_ERROR;
+    error = SHT_Write(CMD_READ_STATUS, NO_END);
+    if(error==NO_ERROR)
+        error = SHT_Read(buffer,50,3,END);
+    if(error==NO_ERROR){
+        dataSHT=(Raw_2B_Data *)buffer;
+        error = SHT_CRC_check(dataSHT->CRC_val,dataSHT->any_val,2);
+    }
+    if(error==NO_ERROR){
+        *status=(dataSHT->any_val[1]<<8)|dataSHT->any_val[2];
+    }
+    return error;
+}
+SHT_Error SHT_Clear_Flags(void){
+    SHT_Error error=NO_ERROR;
+    error = SHT_Write(CMD_CLEAR_STATUS,END);
+    return error;
+}
+SHT_Error SHT_Read_Serial(uint32_t* status){
+    uint8_t buffer[6];
+    uint32_t SerialNum[2];
+    Raw_SHT_Data *dataSHT;
+    SHT_Error error=NO_ERROR;
+        error = SHT_Write(CMD_READ_SERIALNBR, NO_END);
+    if(error==NO_ERROR)
+        error = SHT_Read(buffer,100,6,END);
+    if(error==NO_ERROR){
+        dataSHT=(Raw_SHT_Data*)buffer;
+        error = SHT_CRC_check(dataSHT->CRC_temp,dataSHT->tempval,2);
+        error |= SHT_CRC_check(dataSHT->CRC_humid,dataSHT->humidval,2);
+    }
+    if(error==NO_ERROR){
+        SerialNum[0]=(dataSHT->tempval[0]<<8)|dataSHT->tempval[1];
+        SerialNum[1]=(dataSHT->humidval[0]<<8)|dataSHT->humidval[1];
+        *status=(SerialNum[0]<<16)|SerialNum[1];
+    }
+    return error;
+}
+SHT_Error SHT_Start_Period(SHT_Period_Mode mode){
+    SHT_Error error=NO_ERROR;
+    if(mode==CMD_MEAS_PERI_05_H || mode==CMD_MEAS_PERI_05_M || mode==CMD_MEAS_PERI_05_L)
+        error = SHT_Write(mode, END);
+    else if(mode==CMD_MEAS_PERI_1_H || mode==CMD_MEAS_PERI_1_M || mode==CMD_MEAS_PERI_1_L)
+        error = SHT_Write(mode, END);
+    else if(mode==CMD_MEAS_PERI_2_H || mode==CMD_MEAS_PERI_2_M || mode==CMD_MEAS_PERI_2_L)
+        error = SHT_Write(mode, END);
+    else if(mode==CMD_MEAS_PERI_4_H || mode==CMD_MEAS_PERI_4_M || mode==CMD_MEAS_PERI_4_L)
+        error = SHT_Write(mode, END);
+    else if(mode==CMD_MEAS_PERI_10_H || mode==CMD_MEAS_PERI_10_M || mode==CMD_MEAS_PERI_10_L)
+        error = SHT_Write(mode, END);
+    else
+        error = PARA_ERROR;
+    return error;
+}
+SHT_Error SHT_Read_Period(float *temp,float *humid){
+    uint8_t buffer[6];
+    Raw_SHT_Data *dataSHT;
+    SHT_Error error=NO_ERROR;
+        error = SHT_Write(CMD_FETCH_DATA, NO_END);
+    if(error==NO_ERROR)
+          error = SHT_Read(buffer,1,6,END);
+    if(error==NO_ERROR){
+        dataSHT=(Raw_SHT_Data*)buffer;
+        error = SHT_CRC_check(dataSHT->CRC_temp,dataSHT->tempval,2);
+        error |= SHT_CRC_check(dataSHT->CRC_humid,dataSHT->humidval,2);
+    }
+    if(error==NO_ERROR){
+        *temp=SHT_Temp_Cal(((dataSHT->tempval[0]<<8)|dataSHT->tempval[1]));
+        *humid=SHT_Humid_Cal(((dataSHT->humidval[0]<<8)|dataSHT->humidval[1]));
+    }
+
+    return error;
+}
+SHT_Error SHT_Enable_Heater(void){
+    SHT_Error error=NO_ERROR;
+    error = SHT_Write(CMD_HEATER_ENABLE,END);
+    return error;
+}
+SHT_Error SHT_Disable_Heater(void){
+    SHT_Error error=NO_ERROR;
+    error = SHT_Write(CMD_HEATER_DISABLE,END);
+    return error;
+}
+
+float SHT_Temp_Cal(uint16_t temp){
+    float val=(float)temp;
+    val=175*(val/0xFFFF)-45;
+    return val;
+}
+float SHT_Humid_Cal(uint16_t humid){
+    float val=(float)humid;
+    val=100*val/0xFFFF;
+    return val;
 }
 void wait(long ms){
     ms*=multitime;
