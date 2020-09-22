@@ -46,8 +46,8 @@ int SHT_Read_Raw(float *temp,float *humid){
     if(error==0){
       *temp=(float)((dataSHT->tempval[0]<<8)|dataSHT->tempval[1]);
       *temp=175*(*temp/0xFFFF)-45;
-        *humid=(float)((dataSHT->humidval[0]<<8)|dataSHT->humidval[1]);
-       *humid=100*(*humid)/0xFFFF;}
+      *humid=(float)((dataSHT->humidval[0]<<8)|dataSHT->humidval[1]);
+      *humid=100*(*humid)/0xFFFF;}
 }
 
     return error;
