@@ -45,9 +45,10 @@ uint8_t fetch[20]={0x2C,0x06};// High Repeatability - Enable Clock stretching
 float temp,humid;
 int tem_int,humid_int;
 char buffer[6];
+uint16_t status;
 Raw_SHT_Data *dataSHT;
 int SHT_address_store;
-int error=0;
+SHT_Error error=NO_ERROR;
 /* ----------------------- Static variables ---------------------------------*/
 static USHORT   usRegInputStart = REG_INPUT_START;
 static USHORT   usRegInputBuf[REG_INPUT_NREGS];
@@ -103,21 +104,22 @@ main_app( void )
 	/* Enable the Modbus Protocol Stack. */
     //eStatus = eMBEnable(  );
     //Init I2C 2 mode fast 400KHZ va low 100KHZ
-       SHT_init(SHT_default_address);
+       SHT_init(SHT_default_address,FASTMODE);
+       //SHT_Start_Period(CMD_MEAS_PERI_4_M);
 	for( ;; )
     {
         vMBPortTimersDelay(1000);
-        error = SHT_Read_Raw(&temp,&humid);
-        //tem_int=temp;
-        //humid_int=humid;
+        error = SHT_Read_Polling(&temp,&humid,50,CMD_MEAS_POLLING_L);
+        //error= SHT_Read_Period(&temp,&humid);
         xprintf("Nhiet do: ");
         printfloat(temp);
         xprintf("Do am: ");
         printfloat(humid);
         xprintf("THIS VALUE != 0 IS ERROR: %d\n",error);
         xprintf("\n");
-        while(error!=0) error=SHT_Reset();
+        //while(error!=NO_ERROR) error=SHT_Hard_Reset();
         GPIO_WriteBit(GPIOA, GPIO_Pin_4,!GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_4));
+        error=SHT_Read_Status(&status);
     }
 }
 
