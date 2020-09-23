@@ -104,22 +104,22 @@ main_app( void )
 	/* Enable the Modbus Protocol Stack. */
     //eStatus = eMBEnable(  );
     //Init I2C 2 mode fast 400KHZ va low 100KHZ
-       SHT_init(SHT_default_address,FASTMODE);
-       //SHT_Start_Period(CMD_MEAS_PERI_4_M);
+       SHT_Init(SHT_default_address,FASTMODE);
+       SHT_Start_Period(CMD_MEAS_PERI_2_H);// mode period
 	for( ;; )
     {
         vMBPortTimersDelay(1000);
-        error = SHT_Read_Polling(&temp,&humid,50,CMD_MEAS_POLLING_L);
-        //error= SHT_Read_Period(&temp,&humid);
+        //error = SHT_Read_Polling(&temp,&humid,50,CMD_MEAS_POLLING_H);// mode polling
+        //error = SHT_Read_ClockStr(&temp,&humid,50,CMD_MEAS_CLOCKSTR_H);// mode clockstr
+        error= SHT_Read_Period(&temp,&humid);// mode period
         xprintf("Nhiet do: ");
         printfloat(temp);
         xprintf("Do am: ");
         printfloat(humid);
         xprintf("THIS VALUE != 0 IS ERROR: %d\n",error);
         xprintf("\n");
-        //while(error!=NO_ERROR) error=SHT_Hard_Reset();
+        while(error!=NO_ERROR) error=SHT_Hard_Reset();
         GPIO_WriteBit(GPIOA, GPIO_Pin_4,!GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_4));
-        error=SHT_Read_Status(&status);
     }
 }
 

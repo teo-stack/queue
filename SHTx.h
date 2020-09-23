@@ -8,7 +8,9 @@ extern "C"
 #include <I2C_STM32F0.h>
 
 #define POLYNOMIAL  0x131
+//-------------------SHT address Init-------------------//
 typedef enum {SHT_default_address = 0x44, SHT_other_address = 0x45} SHT_address;
+//-------------------Command Init-------------------//
 typedef enum {
     CMD_READ_SERIALNBR  = 0x3780, // read serial number
     CMD_READ_STATUS     = 0xF32D, // read status register
@@ -27,6 +29,7 @@ typedef enum {
     CMD_W_AL_LIM_LS     = 0x6100, // write alert limits, low set
     CMD_NO_SLEEP        = 0x303E,
 } SHT_Command;
+//-------------------Period Mode Init-------------------//
 typedef enum{
     CMD_MEAS_PERI_05_H  = 0x2032, // measurement: periodic 0.5 mps, high repeatability
     CMD_MEAS_PERI_05_M  = 0x2024, // measurement: periodic 0.5 mps, medium repeatability
@@ -44,46 +47,50 @@ typedef enum{
     CMD_MEAS_PERI_10_M  = 0x2721, // measurement: periodic 10 mps, medium repeatability
     CMD_MEAS_PERI_10_L  = 0x272A, // measurement: periodic 10 mps, low repeatability
 } SHT_Period_Mode;
+//-------------------ClockStr Mode Init-------------------//
 typedef enum{
     CMD_MEAS_CLOCKSTR_H = 0x2C06, // measurement: clock stretching, high repeatability
     CMD_MEAS_CLOCKSTR_M = 0x2C0D, // measurement: clock stretching, medium repeatability
     CMD_MEAS_CLOCKSTR_L = 0x2C10, // measurement: clock stretching, low repeatability
 } SHT_ClockStr_Mode;
+//-------------------Polling Mode Init-------------------//
 typedef enum{
     CMD_MEAS_POLLING_H  = 0x2400, // measurement: polling, high repeatability
     CMD_MEAS_POLLING_M  = 0x240B, // measurement: polling, medium repeatability
     CMD_MEAS_POLLING_L  = 0x2416, // measurement: polling, low repeatability
 } SHT_Polling_Mode;
+//-------------------All error Init-------------------//
 typedef enum{
-    NO_ERROR,
-    ADDRESS_ERROR,
-    BYTE1_ERROR,
-    BYTE2_ERROR,
-    BYTE3_ERROR,
-    BYTE4_ERROR,
-    BYTE5_ERROR,
-    BYTE6_ERROR,
-    CRC_ERROR,
-    PARA_ERROR
+    NO_ERROR, //no error
+    ADDRESS_ERROR, //error no slave address detect
+    BYTE1_ERROR, //timeout error: not recieve 1st byte data
+    BYTE2_ERROR, //timeout error: not recieve 2nd byte data
+    BYTE3_ERROR, //timeout error: not recieve 3rd byte data
+    BYTE4_ERROR, //timeout error: not recieve 4th byte data
+    BYTE5_ERROR, //timeout error: not recieve 5th byte data
+    BYTE6_ERROR, //timeout error: not recieve 6th byte data
+    CRC_ERROR,   //check sum error
+    PARA_ERROR   //parameter error
 } SHT_Error;
+//-------------------Data 6byte Receive To Value-------------------//
 typedef struct {
     uint8_t tempval[2];
     uint8_t CRC_temp;
     uint8_t humidval[2];
     uint8_t CRC_humid;
 }Raw_SHT_Data;
-
+//-------------------Data 3byte Receive To Value-------------------//
 typedef struct {
     uint8_t any_val[2];
     uint8_t CRC_val;
 }Raw_2B_Data;
-
-void SHT_init(SHT_address address,SpeedMode speed);
+//-------------------SHT functions-------------------//
+void SHT_Init(SHT_address address,SpeedMode speed);
 SHT_Error SHT_Write(uint16_t command,FuncState state);
 SHT_Error SHT_Read(uint8_t* buffer,long timeout,int nbr,FuncState state);
 SHT_Error SHT_CRC_check(int CRCval,uint8_t* data, uint8_t nbrOfBytes);
-SHT_Error SHT_Read_ClockStr(float *temp,float *humid,int timeout,SHT_ClockStr_Mode mode);
-SHT_Error SHT_Read_Polling(float *temp,float *humid,int timeout,SHT_Polling_Mode mode);
+SHT_Error SHT_Read_ClockStr(float *temp,float *humid,long timeout,SHT_ClockStr_Mode mode);
+SHT_Error SHT_Read_Polling(float *temp,float *humid,long timeout,SHT_Polling_Mode mode);
 SHT_Error SHT_Start_Period(SHT_Period_Mode mode);
 SHT_Error SHT_Read_Period(float *temp,float *humid);
 int SHT_CalcCrc(uint8_t* data, uint8_t nbrOfBytes);

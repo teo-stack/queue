@@ -75,15 +75,18 @@ uint8_t I2C_read_test(I2C_TypeDef* I2Cx,uint8_t address,uint8_t* buffer,uint8_t 
     uint8_t error=0;
     long timecount;
     I2C_TransferHandling(I2Cx,address<<1,num_byte,I2C_SoftEnd_Mode,I2C_Generate_Start_Read);
-    if(I2C_GetFlagStatus(I2Cx,I2C_FLAG_NACKF)) return 1;
     for(int i=0;i<num_byte;i++){
         timecount=timeout*multitime;
         while ((!I2C_GetFlagStatus(I2Cx,I2C_FLAG_RXNE))&&(--timecount));
+        if(I2C_GetFlagStatus(I2Cx,I2C_FLAG_NACKF)) {
+            I2C_ClearFlag(I2Cx,I2C_FLAG_NACKF);
+            return 1;}
         if(timecount==0) {error=i+2;break;}
         *buffer++=I2C_ReceiveData(I2Cx);
     }
     if(error==0) {I2C_GenerateSTOP(I2Cx, state);}
-    //while (!I2C_GetFlagStatus(I2Cx,I2C_FLAG_BUSY));}
+    //while (!I2C_GetFlagStatus(I2Cx,I2C_FLAG_BUSY));
+
     return error;
 }
 //-----------------------I2C_scan-------------------------//
@@ -128,18 +131,8 @@ void I2C1_Master_Config(SpeedMode mode){
 
 }
 //----------------------I2C1_Deconfig-------------------//
-void I2C1_Deconfig(void){
-
-I2C_SoftwareResetCmd(I2C1);
-
-}
 void I2C1_Reconfig(void){
 
-    GPIOlib_InitStructure.GPIO_Pin = GPIO_Pin_9 | GPIO_Pin_10;						//PA9 - SCL, PA10 - SDA
-    GPIOlib_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-    GPIOlib_InitStructure.GPIO_Mode = GPIO_Mode_AF;
-    GPIOlib_InitStructure.GPIO_OType = GPIO_OType_OD;
-    GPIOlib_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
-    GPIO_Init(GPIOA, &GPIOlib_InitStructure);
+    I2C_SoftwareResetCmd(I2C1);
 
 }
