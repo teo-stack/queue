@@ -39,9 +39,9 @@ uint8_t I2C_write_test(I2C_TypeDef* I2Cx,uint8_t address,uint8_t* buffer,uint8_t
                 break;
             }
         }
-        if (I2C_GetFlagStatus(I2Cx,I2C_FLAG_TC) && error==0) I2C_GenerateSTOP(I2Cx, state);
-        //while (!I2C_GetFlagStatus(I2Cx,I2C_FLAG_BUSY));
+        if(error==0) I2C_GenerateSTOP(I2Cx, state);
     }
+    I2C_ClearFlag(I2Cx,I2C_FLAG_NACKF);
     return error;
 }
 

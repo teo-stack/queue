@@ -23,6 +23,20 @@ SHT_Error SHT_Write(uint16_t command , FuncState state){
     error = I2C_write_test(I2C1,SHT_address_store,buffer,2,state);
     return error;
 }
+//--------------------SHT Write CRC--------------------//
+SHT_Error SHT_Write_Command_Data(uint16_t command ,uint16_t value , FuncState state){
+    SHT_Error error=NO_ERROR;
+    uint8_t buffer[5];
+    Raw_4B_Data *data;
+    data=(Raw_4B_Data *)buffer;
+    data->command[0]    = (command>>8)&0xFF;
+    data->command[1]    = (command)&0xFF;
+    data->any_val[0]    = (value>>8)&0xFF;
+    data->any_val[1]    = (value)&0xFF;
+    data->CRC_val       =  SHT_CalcCrc(data->any_val,2);
+    error = I2C_write_test(I2C1,SHT_address_store,buffer,5,state);
+    return error;
+}
 //--------------------SHT Read--------------------//
 SHT_Error SHT_Read(uint8_t* buffer,long timeout,int nbr,FuncState state){
     SHT_Error error=NO_ERROR;
@@ -195,6 +209,137 @@ SHT_Error SHT_Read_Period(float *temp,float *humid){
     }
 
     return error;
+}
+//---------------------SHT Get Alert Limit---------------------//
+SHT_Error SHT_Get_Alert_Limit(float* humidityHighSet,   float* temperatureHighSet,
+                             float* humidityHighClear, float* temperatureHighClear,
+                             float* humidityLowClear,  float* temperatureLowClear,
+                             float* humidityLowSet,    float* temperatureLowSet)
+{
+  SHT_Error  error = NO_ERROR;  // error code
+
+  // read humidity & temperature alter limits, high set
+  if(error == NO_ERROR) error = SHT_Write(CMD_R_AL_LIM_HS,NO_END);
+  if(error == NO_ERROR) error = SHT_Read_Alert_Limit(humidityHighSet,
+                                                         temperatureHighSet);
+
+  if(error == NO_ERROR)
+  {
+    // read humidity & temperature alter limits, high clear
+    if(error == NO_ERROR) error = SHT_Write(CMD_R_AL_LIM_HC,NO_END);
+    if(error == NO_ERROR) error = SHT_Read_Alert_Limit(humidityHighClear,
+                                                           temperatureHighClear);
+  }
+
+  if(error == NO_ERROR)
+  {
+    // read humidity & temperature alter limits, low clear
+    if(error == NO_ERROR) error = SHT_Write(CMD_R_AL_LIM_LC,NO_END);
+    if(error == NO_ERROR) error = SHT_Read_Alert_Limit(humidityLowClear,
+                                                           temperatureLowClear);
+  }
+
+  if(error == NO_ERROR)
+  {
+    // read humidity & temperature alter limits, low set
+    if(error == NO_ERROR) error = SHT_Write(CMD_R_AL_LIM_LS,NO_END);
+    if(error == NO_ERROR) error = SHT_Read_Alert_Limit(humidityLowSet,
+                                                           temperatureLowSet);
+  }
+
+  return error;
+}
+//---------------------SHT Set Alert Limit---------------------//
+SHT_Error SHT_Set_Alert_Limit(float humidityHighSet,   float temperatureHighSet,
+                             float humidityHighClear, float temperatureHighClear,
+                             float humidityLowClear,  float temperatureLowClear,
+                             float humidityLowSet,    float temperatureLowSet)
+{
+  SHT_Error  error = NO_ERROR;  // error code
+
+  // write humidity & temperature alter limits, high set
+
+  if(error == NO_ERROR) error = SHT_Write_Alert_Limit(CMD_W_AL_LIM_HS,humidityHighSet,
+                                                          temperatureHighSet);
+
+
+  if(error == NO_ERROR)
+  {
+    // write humidity & temperature alter limits, high clear
+    if(error == NO_ERROR) error = SHT_Write_Alert_Limit(CMD_W_AL_LIM_HC,humidityHighClear,
+                                                            temperatureHighClear);
+  }
+
+  if(error == NO_ERROR)
+  {
+    // write humidity & temperature alter limits, low clear
+    if(error == NO_ERROR) error = SHT_Write_Alert_Limit(CMD_W_AL_LIM_LC,humidityLowClear,
+                                                            temperatureLowClear);
+  }
+
+  if(error == NO_ERROR)
+  {
+    // write humidity & temperature alter limits, low set
+    if(error == NO_ERROR) error = SHT_Write_Alert_Limit(CMD_W_AL_LIM_LS,humidityLowSet,
+                                                            temperatureLowSet);
+
+  }
+
+  return error;
+}
+//---------------------SHT Write Alert Limit---------------------//
+SHT_Error SHT_Write_Alert_Limit(uint16_t command,float humid, float temp)
+{
+  SHT_Error  error = NO_ERROR;
+  uint16_t rawdata;
+  if((humid < 0.0f) || (humid > 100.0f)
+  || (temp < -45.0f) || (temp > 130.0f))
+  {
+    error = PARA_ERROR;
+  }
+  else
+  {
+    rawdata = (SHT_Calc_Raw_Humid(humid) & 0xFE00) | ((SHT_Calc_Raw_Temp(temp)>> 7) & 0x001FF);
+    error = SHT_Write_Command_Data(command,rawdata,END);
+  }
+
+  return error;
+}
+//---------------------SHT Read Alert Limit---------------------//
+SHT_Error SHT_Read_Alert_Limit(float* humid, float* temp)
+{
+  SHT_Error  error = NO_ERROR;           // error code
+  uint8_t buffer[3];
+  uint16_t value;
+  Raw_2B_Data *data;
+  error = SHT_Read(buffer,1,3,END);
+  if(error == NO_ERROR){
+      data=(Raw_2B_Data *)buffer;
+      error=SHT_CRC_check(data->CRC_val,data->any_val,2);
+  }
+  if(error == NO_ERROR)
+  {
+      value=(data->any_val[0]<<8)|data->any_val[1];
+    *humid = SHT_Humid_Cal(value & 0xFE00);
+    *temp = SHT_Temp_Cal(value << 7);
+  }
+
+  return error;
+}
+//--------------------SHT Calc Raw Temp-------------------//
+uint16_t SHT_Calc_Raw_Temp(float temp)
+{
+  // calculate raw temperature [ticks]
+  // rawT = (temperature + 45) / 175 * (2^16-1)
+  return (temp + 45.0f) / 175.0f * 65535.0f;
+}
+
+//--------------------SHT Calc Raw Humid-------------------//
+uint16_t SHT_Calc_Raw_Humid(float humid)
+{
+  // calculate raw relative humidity [ticks]
+  // rawRH = humidity / 100 * (2^16-1)
+  return humid / 100.0f * 65535.0f;
 }
 //--------------------SHT Enable Heater--------------------//
 SHT_Error SHT_Enable_Heater(void){

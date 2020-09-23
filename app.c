@@ -43,12 +43,14 @@ uint8_t val[20],check1,check2;//buffer chua gia tri thanh ghi va check fuction t
 uint8_t fetch[20]={0x2C,0x06};// High Repeatability - Enable Clock stretching
 //https://www.mouser.com/datasheet/2/682/Sensirion_Humidity_Sensors_SHT3x_Datasheet_digital-971521.pdf
 float temp,humid;
+float a,b,c,d,e,f,g,h;
 int tem_int,humid_int;
 char buffer[6];
 uint16_t status;
 Raw_SHT_Data *dataSHT;
 int SHT_address_store;
 SHT_Error error=NO_ERROR;
+
 /* ----------------------- Static variables ---------------------------------*/
 static USHORT   usRegInputStart = REG_INPUT_START;
 static USHORT   usRegInputBuf[REG_INPUT_NREGS];
@@ -84,6 +86,7 @@ main_app( void )
         xprintf_stream_io_out = uart1_putc;
         xprintf("Hi :) !!!\n");
         dataSHT=(Raw_SHT_Data*)val;
+            Reg_Status status;
     //eMBErrorCode    eStatus;
     //(void)eStatus;
 
@@ -98,6 +101,8 @@ main_app( void )
 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
     GPIO_ResetBits(GPIOA, GPIO_Pin_4);
+        a=10;b=20;c=30;d=40;
+        e=50;f=60;g=70;h=80;
        //UART_config();
     //eStatus = eMBInit( MB_RTU, 0x01, 0, 115200, MB_PAR_NONE );
 
@@ -105,13 +110,25 @@ main_app( void )
     //eStatus = eMBEnable(  );
     //Init I2C 2 mode fast 400KHZ va low 100KHZ
        SHT_Init(SHT_default_address,FASTMODE);
-       SHT_Start_Period(CMD_MEAS_PERI_2_H);// mode period
+        error=SHT_Read_Status(&status.u16);
+         if(status.bit.ResetDetected)
+        error=SHT_Set_Alert_Limit(a,b,c,d,e,f,g,h);
+        SHT_Start_Period(CMD_MEAS_PERI_2_H);// mode period
 	for( ;; )
     {
         vMBPortTimersDelay(1000);
         //error = SHT_Read_Polling(&temp,&humid,50,CMD_MEAS_POLLING_H);// mode polling
         //error = SHT_Read_ClockStr(&temp,&humid,50,CMD_MEAS_CLOCKSTR_H);// mode clockstr
         error= SHT_Read_Period(&temp,&humid);// mode period
+        error=SHT_Get_Alert_Limit(&a,&b,&c,&d,&e,&f,&g,&h);
+        printfloat(a);
+        printfloat(b);
+        printfloat(c);
+        printfloat(d);
+        printfloat(e);
+        printfloat(f);
+        printfloat(g);
+        printfloat(h);
         xprintf("Nhiet do: ");
         printfloat(temp);
         xprintf("Do am: ");

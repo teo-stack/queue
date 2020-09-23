@@ -84,9 +84,33 @@ typedef struct {
     uint8_t any_val[2];
     uint8_t CRC_val;
 }Raw_2B_Data;
+
+typedef struct {
+    uint8_t command[2];
+    uint8_t any_val[2];
+    uint8_t CRC_val;
+}Raw_4B_Data;
+//-------------------Reg Status-------------------//
+typedef union {
+  uint16_t u16;
+  struct{
+    uint16_t CrcStatus     : 1; // write data checksum status
+    uint16_t CmdStatus     : 1; // command status
+    uint16_t Reserve0      : 2; // reserved
+    uint16_t ResetDetected : 1; // system reset detected
+    uint16_t Reserve1      : 5; // reserved
+    uint16_t T_Alert       : 1; // temperature tracking alert
+    uint16_t RH_Alert      : 1; // humidity tracking alert
+    uint16_t Reserve2      : 1; // reserved
+    uint16_t HeaterStatus  : 1; // heater status
+    uint16_t Reserve3      : 1; // reserved
+    uint16_t AlertPending  : 1; // alert pending status
+  }bit;
+} Reg_Status;
 //-------------------SHT functions-------------------//
 void SHT_Init(SHT_address address,SpeedMode speed);
 SHT_Error SHT_Write(uint16_t command,FuncState state);
+SHT_Error SHT_Write_Command_Data(uint16_t command ,uint16_t value , FuncState state);
 SHT_Error SHT_Read(uint8_t* buffer,long timeout,int nbr,FuncState state);
 SHT_Error SHT_CRC_check(int CRCval,uint8_t* data, uint8_t nbrOfBytes);
 SHT_Error SHT_Read_ClockStr(float *temp,float *humid,long timeout,SHT_ClockStr_Mode mode);
@@ -101,8 +125,20 @@ SHT_Error SHT_Clear_Flags(void);
 SHT_Error SHT_Read_Serial(uint32_t* status);
 SHT_Error SHT_Enable_Heater(void);
 SHT_Error SHT_Disable_Heater(void);
+SHT_Error SHT_Write_Alert_Limit(uint16_t command, float humid, float temp);
+SHT_Error SHT_Read_Alert_Limit(float* humid, float* temp);
+SHT_Error SHT_Set_Alert_Limit(float humidityHighSet,   float temperatureHighSet,
+                             float humidityHighClear, float temperatureHighClear,
+                             float humidityLowClear,  float temperatureLowClear,
+                             float humidityLowSet,    float temperatureLowSet);
+SHT_Error SHT_Get_Alert_Limit(float* humidityHighSet,   float* temperatureHighSet,
+                             float* humidityHighClear, float* temperatureHighClear,
+                             float* humidityLowClear,  float* temperatureLowClear,
+                             float* humidityLowSet,    float* temperatureLowSet);
 float SHT_Temp_Cal(uint16_t temp);
 float SHT_Humid_Cal(uint16_t humid);
+uint16_t SHT_Calc_Raw_Temp(float temp);
+uint16_t SHT_Calc_Raw_Humid(float humid);
 void wait(long ms);
 int SHT_address_store,speed_store;
 #ifdef __cplusplus
