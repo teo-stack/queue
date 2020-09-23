@@ -128,7 +128,7 @@ SHT_Error SHT_Read_Status(uint16_t* status){
         error = SHT_CRC_check(dataSHT->CRC_val,dataSHT->any_val,2);
     }
     if(error==NO_ERROR){
-        *status=(dataSHT->any_val[1]<<8)|dataSHT->any_val[2];
+        *status=(dataSHT->any_val[0]<<8)|dataSHT->any_val[1];
     }
     return error;
 }
@@ -220,7 +220,7 @@ float SHT_Humid_Cal(uint16_t humid){
     val=100*val/0xFFFF;
     return val;
 }
-//--------------------wait(ms)--------------------//
+//--------------------wait--------------------//
 void wait(long ms){
     ms*=multitime;
     while(ms--);
