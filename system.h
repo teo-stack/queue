@@ -14,10 +14,10 @@
 #ifndef SYSTEM_H
 #define SYSTEM_H
 
-//-- Includes -----------------------------------------------------------------
-#include "stm32f10x.h"             // controller register definitions
+//-- Includes -----------------------------------------------------------------            // controller register definitions
 #include "typedefs.h"              // type definitions
-
+#include "stm32f0xx_conf.h"
+#include "stm32f0xx.h"
 //-- Enumerations -------------------------------------------------------------
 // Error codes
 typedef enum{
@@ -29,7 +29,7 @@ typedef enum{
 }etError;
 
 //=============================================================================
-void SystemInit(void);
+//void SystemInit(void);
 //=============================================================================
 // Initializes the system
 //-----------------------------------------------------------------------------

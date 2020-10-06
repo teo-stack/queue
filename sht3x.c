@@ -57,12 +57,12 @@ void SHT3X_Init(u8t i2cAddress)          /* -- adapt the init for your uC -- */
   RCC->APB2ENR |= 0x00000008;  // I/O port B clock enabled
   
   // Alert on port B, bit 10
-  GPIOB->CRH   &= 0xFFFFF0FF;  // set floating input for Alert-Pin
-  GPIOB->CRH   |= 0x00000400;  //
+  //GPIOB->CRH   &= 0xFFFFF0FF;  // set floating input for Alert-Pin
+  //GPIOB->CRH   |= 0x00000400;  //
   
   // Reset on port B, bit 12
-  GPIOB->CRH   &= 0xFFF0FFFF;  // set push-pull output for Reset pin
-  GPIOB->CRH   |= 0x00010000;  //
+  //GPIOB->CRH   &= 0xFFF0FFFF;  // set push-pull output for Reset pin
+  //GPIOB->CRH   |= 0x00010000;  //
   RESET_LOW();
   
   I2c_Init(); // init I2C
@@ -549,7 +549,7 @@ etError SHT3X_GetAlertLimits(ft* humidityHighSet,   ft* temperatureHighSet,
 bt SHT3X_ReadAlert(void)
 {
   // read alert pin
-  return (ALERT_READ != 0) ? TRUE : FALSE;
+  return (ALERT_READ != 0) ? TRUE_ : FALSE_;
 }
 
 //-----------------------------------------------------------------------------

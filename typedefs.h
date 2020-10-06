@@ -34,8 +34,8 @@ typedef float           ft;       ///< range: +-1.18E-38 .. +-3.39E+38
 typedef double          dt;       ///< range:            .. +-1.79E+308
 
 typedef enum{
-  FALSE     = 0,
-  TRUE      = 1
+  FALSE_     = 0,
+  TRUE_      = 1
 }bt;
 
 typedef union {

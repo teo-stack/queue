@@ -16,8 +16,7 @@
 
 //-- Includes -----------------------------------------------------------------
 #include "system.h"
-#include "stm32f0xx_conf.h"
-#include "stm32f0xx.h"
+
 //-- Enumerations -------------------------------------------------------------
 
 // I2C acknowledge

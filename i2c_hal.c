@@ -18,16 +18,17 @@
 // I2C IO-Pins                        /* -- adapt the defines for your uC -- */
 #define SCL                     GPIO_Pin_9
 #define SDA                     GPIO_Pin_10
+#define I2C_PORT                GPIOA
 
 // SDA on port B, bit 14
-#define SDA_LOW()  GPIO_WriteBit(GPIOA, SDA, RESET) // set SDA to low
-#define SDA_OPEN() GPIO_WriteBit(GPIOA, SDA, !RESET) // set SDA to open-drain
-#define SDA_READ   GPIO_ReadInputDataBit(GPIOA, SDA) // read SDA
+#define SDA_LOW()  GPIO_WriteBit(I2C_PORT, SDA, RESET) // set SDA to low
+#define SDA_OPEN() GPIO_WriteBit(I2C_PORT, SDA, !RESET) // set SDA to open-drain
+#define SDA_READ   GPIO_ReadInputDataBit(I2C_PORT, SDA) // read SDA
 
 // SCL on port B, bit 13              /* -- adapt the defines for your uC -- */
-#define SCL_LOW()  GPIO_WriteBit(GPIOA, SCL, RESET) // set SCL to low
-#define SCL_OPEN() GPIO_WriteBit(GPIOA, SCL, !RESET) // set SCL to open-drain
-#define SCL_READ   GPIO_ReadInputDataBit(GPIOA, SCL)     // read SCL
+#define SCL_LOW()  GPIO_WriteBit(I2C_PORT, SCL, RESET) // set SCL to low
+#define SCL_OPEN() GPIO_WriteBit(I2C_PORT, SCL, !RESET) // set SCL to open-drain
+#define SCL_READ   GPIO_ReadInputDataBit(I2C_PORT, SCL)     // read SCL
 
 //-- Static function prototypes -----------------------------------------------
 static etError I2c_WaitWhileClockStreching(u8t timeout);
@@ -44,12 +45,12 @@ void I2c_Init(void)                      /* -- adapt the init for your uC -- */
   // SCL on port B, bit 13
 
   GPIO_InitTypeDef        I2CPin_InitStructure;
-  I2CPin_InitStructure.GPIO_Pin = GPIO_Pin_9 | GPIO_Pin_10;						//PA9 - SCL, PA10 - SDA
+  I2CPin_InitStructure.GPIO_Pin = SDA | SCL;						//PA9 - SCL, PA10 - SDA
   I2CPin_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
   I2CPin_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
   I2CPin_InitStructure.GPIO_OType = GPIO_OType_OD;
   I2CPin_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
-  GPIO_Init(GPIOA, &I2CPin_InitStructure); // set open-drain output for SDA and SCL
+  GPIO_Init(I2C_PORT, &I2CPin_InitStructure); // set open-drain output for SDA and SCL
 
 }
 

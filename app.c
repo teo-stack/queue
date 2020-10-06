@@ -29,27 +29,17 @@
 #include "port.h"
 #include "stm32f0xx_conf.h"
 #include "stm32f0xx.h"
-#include "I2C_STM32F0.h"
 #include "math.h"
 #include "io_cfg.h"
 #include "xprintf.h"
-#include "SHTx.h"
+
 /* ----------------------- Defines ------------------------------------------*/
 #define REG_INPUT_START 1000
 #define REG_INPUT_NREGS 4
 //---------------------------------------SHT-------------------------------//
-#define SHTaddress   0x44
-uint8_t val[20],check1,check2;//buffer chua gia tri thanh ghi va check fuction thuc hien thanh cong
-uint8_t fetch[20]={0x2C,0x06};// High Repeatability - Enable Clock stretching
+
 //https://www.mouser.com/datasheet/2/682/Sensirion_Humidity_Sensors_SHT3x_Datasheet_digital-971521.pdf
-float temp,humid;
-float a,b,c,d,e,f,g,h;
-int tem_int,humid_int;
-char buffer[6];
-uint16_t status;
-Raw_SHT_Data *dataSHT;
-int SHT_address_store;
-SHT_Error error=NO_ERROR;
+
 
 /* ----------------------- Static variables ---------------------------------*/
 static USHORT   usRegInputStart = REG_INPUT_START;
@@ -82,11 +72,10 @@ app_dbg_fatal( const int8_t* s, uint8_t c )
 
 void
 main_app( void )
-{   	uart1_init(115200);
+{   SystemInit();
+    uart1_init(115200);
         xprintf_stream_io_out = uart1_putc;
         xprintf("Hi :) !!!\n");
-        dataSHT=(Raw_SHT_Data*)val;
-            Reg_Status status;
     //eMBErrorCode    eStatus;
     //(void)eStatus;
 
@@ -101,41 +90,48 @@ main_app( void )
 	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
 	GPIO_Init(GPIOA, &GPIO_InitStructure);
     GPIO_ResetBits(GPIOA, GPIO_Pin_4);
-        a=10;b=20;c=30;d=40;
-        e=50;f=60;g=70;h=80;
        //UART_config();
     //eStatus = eMBInit( MB_RTU, 0x01, 0, 115200, MB_PAR_NONE );
 
 	/* Enable the Modbus Protocol Stack. */
     //eStatus = eMBEnable(  );
-    //Init I2C 2 mode fast 400KHZ va low 100KHZ
-       SHT_Init(SHT_default_address,FASTMODE);
-        error=SHT_Read_Status(&status.u16);
-         if(status.bit.ResetDetected)
-        error=SHT_Set_Alert_Limit(a,b,c,d,e,f,g,h);
-        SHT_Start_Period(CMD_MEAS_PERI_2_H);// mode period
+
+        etError   error;       // error code
+        u32t      serialNumber;// serial number
+        regStatus status;      // sensor status
+        ft        temperature; // temperature [�C]
+        ft        humidity;    // relative humidity [%RH]
+        bt        heater;      // heater, false: off, true: on
+
+
+        SHT3X_Init(0x44); // Address: 0x44 = Sensor on EvalBoard connector
+                          //          0x45 = Sensor on EvalBoard
+
+        // wait 50ms after power on
+        DelayMicroSeconds(50000);
+
+        error = SHT3x_ReadSerialNumber(&serialNumber);
+        if(error != NO_ERROR){} // do error handling here
+
+        // demonstrate a single shot measurement with clock-stretching
+        error = SHT3X_GetTempAndHumi(&temperature, &humidity, REPEATAB_HIGH, MODE_CLKSTRETCH, 50);
+        if(error != NO_ERROR){} // do error handling here
+
+        // demonstrate a single shot measurement with polling and 50ms timeout
+        error = SHT3X_GetTempAndHumi(&temperature, &humidity, REPEATAB_HIGH, MODE_POLLING, 50);
+        if(error != NO_ERROR){} // do error handling here
+
+
 	for( ;; )
     {
         vMBPortTimersDelay(1000);
-        //error = SHT_Read_Polling(&temp,&humid,50,CMD_MEAS_POLLING_H);// mode polling
-        //error = SHT_Read_ClockStr(&temp,&humid,50,CMD_MEAS_CLOCKSTR_H);// mode clockstr
-        error= SHT_Read_Period(&temp,&humid);// mode period
-        error=SHT_Get_Alert_Limit(&a,&b,&c,&d,&e,&f,&g,&h);
-        printfloat(a);
-        printfloat(b);
-        printfloat(c);
-        printfloat(d);
-        printfloat(e);
-        printfloat(f);
-        printfloat(g);
-        printfloat(h);
+        error = SHT3X_GetTempAndHumi(&temperature, &humidity, REPEATAB_HIGH, MODE_CLKSTRETCH, 50);
+        if(error != NO_ERROR){} // do error handling here
         xprintf("Nhiet do: ");
-        printfloat(temp);
+        printfloat(temperature);
         xprintf("Do am: ");
-        printfloat(humid);
-        xprintf("THIS VALUE != 0 IS ERROR: %d\n",error);
+        printfloat(humidity);
         xprintf("\n");
-        while(error!=NO_ERROR) error=SHT_Hard_Reset();
         GPIO_WriteBit(GPIOA, GPIO_Pin_4,!GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_4));
     }
 }
@@ -199,133 +195,7 @@ eMBRegDiscreteCB( UCHAR * pucRegBuffer, USHORT usAddress, USHORT usNDiscrete )
 	(void)usNDiscrete;
 	return MB_ENOREG;
 }
-void I2C_Soft_int(){
-    // cap clock cho ngoai vi va I2C						// su dung kenh I2C2 cua STM32
-    RCC_APB2PeriphClockCmd(RCC_AHBPeriph_GPIOA, ENABLE);
-    // cau hinh chan SDA va SCL
-    GPIOlib_InitStructure.GPIO_Pin = GPIO_Pin_9 | GPIO_Pin_10;						//PA9 - SCL, PA10 - SDA
-    GPIOlib_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-    GPIOlib_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
-    GPIOlib_InitStructure.GPIO_OType = GPIO_OType_OD;
-    GPIOlib_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
-    GPIO_Init(GPIOA, &GPIOlib_InitStructure);
-    GPIO_WriteBit(GPIOA,SCL,1);
-    GPIO_WriteBit(GPIOA,SDA,1);
-}
 
-void delay_us(long time){
-    time*=SystemCoreClock/1000000;
-    while(time--);
-}
-
-void generate_start(){
-    GPIO_WriteBit(GPIOA,SDA,1);
-    delay_us(1);
-    GPIO_WriteBit(GPIOA,SCL,1);
-    delay_us(1);
-    GPIO_WriteBit(GPIOA,SDA,0);
-    delay_us(10);
-    GPIO_WriteBit(GPIOA,SCL,0);
-    delay_us(10);
-}
-
-void generate_stop(){
-    GPIO_WriteBit(GPIOA,SCL,0);
-    delay_us(1);
-    GPIO_WriteBit(GPIOA,SDA,0);
-    delay_us(1);
-    GPIO_WriteBit(GPIOA,SCL,1);
-    delay_us(10);
-    GPIO_WriteBit(GPIOA,SDA,1);
-    delay_us(10);
-}
-uint8_t write_byte(uint8_t txByte){
-    uint8_t    mask,error;
-    for(mask = 0x80; mask > 0; mask >>= 1)// shift bit for masking (8 times)
-    {
-      if((mask & txByte) == 0) GPIO_WriteBit(GPIOA,SDA,0); // masking txByte, write bit to SDA-Line
-      else                     GPIO_WriteBit(GPIOA,SDA,1);
-      delay_us(1);               // data set-up time (t_SU;DAT)
-      GPIO_WriteBit(GPIOA,SCL,1);                         // generate clock pulse on SCL
-      delay_us(5);               // SCL high time (t_HIGH)
-      GPIO_WriteBit(GPIOA,SCL,0);
-      delay_us(1);               // data hold time(t_HD;DAT)
-    }
-    GPIO_WriteBit(GPIOA,SDA,1);                           // release SDA-line
-    GPIO_WriteBit(GPIOA,SCL,1);                          // clk #9 for ack
-    delay_us(1);                 // data set-up time (t_SU;DAT)
-    if(GPIO_ReadInputDataBit(GPIOA,SDA)) error = 1;
-    else error = 0;// check ack from i2c slave
-    GPIO_WriteBit(GPIOA,SCL,0);
-    delay_us(20);
-    return error;
-}
-uint8_t read_byte(uint8_t *rxByte,uint8_t ack, long timeout)
-{
-  uint8_t mask,error;
-  *rxByte = 0x00;
-  GPIO_WriteBit(GPIOA,SDA,1);                            // release SDA-line
-  for(mask = 0x80; mask > 0; mask >>= 1) // shift bit for masking (8 times)
-  {
-    GPIO_WriteBit(GPIOA,SCL,1);                          // start clock on SCL-line
-    delay_us(1);                // clock set-up time (t_SU;CLK)
-    error = I2c_Wait(timeout);// wait while clock streching
-    delay_us(3);                // SCL high time (t_HIGH)
-    if(GPIO_ReadInputDataBit(GPIOA,SDA)) *rxByte |= mask;        // read bit
-    GPIO_WriteBit(GPIOA,SCL,0);
-    delay_us(1);                // data hold time(t_HD;DAT)
-  }
-  if(ack) GPIO_WriteBit(GPIOA,SDA,0);   //ACK           // send acknowledge if necessary
-  else           GPIO_WriteBit(GPIOA,SDA,1);  //NACK
-  delay_us(1);                  // data set-up time (t_SU;DAT)
-  GPIO_WriteBit(GPIOA,SCL,1);                          // clk #9 for ack
-  delay_us(5);                  // SCL high time (t_HIGH)
-  GPIO_WriteBit(GPIOA,SCL,0);
-  GPIO_WriteBit(GPIOA,SDA,1);                           // release SDA-line
-  delay_us(20);                 // wait to see byte package on scope
-
-  return error;                          // return with no error
-}
-uint8_t I2c_Wait(uint8_t timeout)
-{
-  uint8_t error = 0;
-
-  while(!GPIO_ReadInputDataBit(GPIOA,SCL))
-  {
-    if(timeout-- == 0) return 1;
-    delay_us(1000);
-  }
-
-  return error;
-}
-uint8_t I2C_Soft_Write(uint8_t address,uint8_t* buffer,uint8_t num,uint8_t end){
-    uint8_t error=0;
-    generate_start();
-    error=write_byte(address<<1);
-    if(error) return 1;
-    for(int i=0;i<num;i++){
-    error=write_byte(*buffer++);
-    if(error) {return 2;}
-    }
-    if(end) generate_stop();
-    return error;
-}
-uint8_t I2C_Soft_Read(uint8_t address,uint8_t* buffer,uint8_t num,long timeout,uint8_t end){
-    uint8_t error=0;
-    generate_start();
-    error=write_byte((address<<1)|1);
-    if(error) return 1;
-
-    for(int i=0;i<num;i++){
-    if(i!=num-1 && i!= 0) error=read_byte(buffer++,1,0);
-    else if(i==0) error=read_byte(buffer++,1,timeout);
-    else error=read_byte(buffer++,0,0);
-
-    if(error) {return 2;}
-    }
-    if(end) generate_stop();
-    return error;
-}
 void printfloat(float val_float){
     int val_int[2];
     val_int[0]=val_float;
