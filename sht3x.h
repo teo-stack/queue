@@ -16,7 +16,7 @@
 #define SHT3X_H
 
 //-- Includes -----------------------------------------------------------------
-#include "system.h"
+#include "system_i2c.h"
 #include "i2c_hal.h"
 
 //-- Enumerations -------------------------------------------------------------

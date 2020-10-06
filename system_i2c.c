@@ -12,15 +12,15 @@
 //=============================================================================
 
 //-- Includes -----------------------------------------------------------------
-#include "system.h"
-
+#include "system_i2c.h"
+//#include "system.h"
 //-----------------------------------------------------------------------------
-/*
-void SystemInit(void)
+
+void System_I2C_Init(void)
 {
   // no initialization required
 }
-*/
+
 //-----------------------------------------------------------------------------
 void DelayMicroSeconds(u32t nbrOfUs)   /* -- adapt this delay for your uC -- */
 {

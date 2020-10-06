@@ -132,6 +132,8 @@ main_app( void )
         xprintf("Do am: ");
         printfloat(humidity);
         xprintf("\n");
+        xprintf("THIS VALUE != 0 IS ERROR: %d\n",error);
+        xprintf("\n");
         GPIO_WriteBit(GPIOA, GPIO_Pin_4,!GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_4));
     }
 }

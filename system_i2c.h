@@ -11,8 +11,8 @@
 // Brief     :  System functions, global definitions
 //=============================================================================
 
-#ifndef SYSTEM_H
-#define SYSTEM_H
+#ifndef SYSTEM_I2C_H
+#define SYSTEM_I2C_H
 
 //-- Includes -----------------------------------------------------------------            // controller register definitions
 #include "typedefs.h"              // type definitions
@@ -29,7 +29,7 @@ typedef enum{
 }etError;
 
 //=============================================================================
-//void SystemInit(void);
+void System_I2C_Init(void);
 //=============================================================================
 // Initializes the system
 //-----------------------------------------------------------------------------

@@ -10,7 +10,7 @@ extern "C"
 #include "stm32f0xx.h"
 #include <stdint.h>
 #include "sht3x.h"
-#include "system.h"
+#include "system_i2c.h"
 
 extern void main_app();
 extern void app_dbg_fatal(const int8_t* s, uint8_t c);

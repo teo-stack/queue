@@ -33,6 +33,7 @@
 //-- Static function prototypes -----------------------------------------------
 static etError I2c_WaitWhileClockStreching(u8t timeout);
 
+GPIO_InitTypeDef        I2CPin_InitStructure;
 //-----------------------------------------------------------------------------
 void I2c_Init(void)                      /* -- adapt the init for your uC -- */
 {
@@ -44,7 +45,6 @@ void I2c_Init(void)                      /* -- adapt the init for your uC -- */
   // SDA on port B, bit 14
   // SCL on port B, bit 13
 
-  GPIO_InitTypeDef        I2CPin_InitStructure;
   I2CPin_InitStructure.GPIO_Pin = SDA | SCL;						//PA9 - SCL, PA10 - SDA
   I2CPin_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
   I2CPin_InitStructure.GPIO_Mode = GPIO_Mode_OUT;
