@@ -40,14 +40,12 @@
 
 //https://www.mouser.com/datasheet/2/682/Sensirion_Humidity_Sensors_SHT3x_Datasheet_digital-971521.pdf
 
-
+char *QueueStatus[3]={"Empty","Available","Full"};
 /* ----------------------- Static variables ---------------------------------*/
 static USHORT   usRegInputStart = REG_INPUT_START;
 static USHORT   usRegInputBuf[REG_INPUT_NREGS];
+int val=0, store=0;
 
-uint8_t setup[20]={PWR_MGMT_1,0};
-long timeval=0;
-uint8_t dem=ACCEL_XOUT_H ;
 /* ----------------------- Start implementation -----------------------------*/
 GPIO_InitTypeDef        GPIO_InitStructure;
 USART_InitTypeDef       UART_InitStructure;
@@ -72,8 +70,9 @@ app_dbg_fatal( const int8_t* s, uint8_t c )
 
 void
 main_app( void )
-{   SystemInit();
-    uart1_init(115200);
+{
+    struct Queue* q = createQueue();
+    uart1_init(230400);
         xprintf_stream_io_out = uart1_putc;
         xprintf("Hi :) !!!\n");
     //eMBErrorCode    eStatus;
@@ -96,45 +95,26 @@ main_app( void )
 	/* Enable the Modbus Protocol Stack. */
     //eStatus = eMBEnable(  );
 
-        etError   error;       // error code
-        u32t      serialNumber;// serial number
-        regStatus status;      // sensor status
-        ft        temperature; // temperature [�C]
-        ft        humidity;    // relative humidity [%RH]
-        bt        heater;      // heater, false: off, true: on
-
-
-        SHT3X_Init(0x44); // Address: 0x44 = Sensor on EvalBoard connector
-                          //          0x45 = Sensor on EvalBoard
-
-        // wait 50ms after power on
-        DelayMicroSeconds(50000);
-
-        error = SHT3x_ReadSerialNumber(&serialNumber);
-        if(error != NO_ERROR){} // do error handling here
-
-        // demonstrate a single shot measurement with clock-stretching
-        error = SHT3X_GetTempAndHumi(&temperature, &humidity, REPEATAB_HIGH, MODE_CLKSTRETCH, 50);
-        if(error != NO_ERROR){} // do error handling here
-
-        // demonstrate a single shot measurement with polling and 50ms timeout
-        error = SHT3X_GetTempAndHumi(&temperature, &humidity, REPEATAB_HIGH, MODE_POLLING, 50);
-        if(error != NO_ERROR){} // do error handling here
-
-
 	for( ;; )
     {
-        vMBPortTimersDelay(1000);
-        error = SHT3X_GetTempAndHumi(&temperature, &humidity, REPEATAB_HIGH, MODE_CLKSTRETCH, 50);
-        if(error != NO_ERROR){} // do error handling here
-        xprintf("Nhiet do: ");
-        printfloat(temperature);
-        xprintf("Do am: ");
-        printfloat(humidity);
-        xprintf("\n");
-        xprintf("THIS VALUE != 0 IS ERROR: %d\n",error);
-        xprintf("\n");
+        xprintf("Enqueue:\n");
+        for(int i=0; i<80; i++){
+        enQueue(q,val++);
+        xprintf(QueueStatus[getRear(q,&store)]);
+        xprintf("   ");
+        printfloat(store);
         GPIO_WriteBit(GPIOA, GPIO_Pin_4,!GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_4));
+        //vMBPortTimersDelay(1);
+        }
+        xprintf("Dequeue:\n");
+        for(int i=0; i<100; i++){
+        deQueue(q,&store);
+        xprintf(QueueStatus[getFront(q,&store)]);
+        xprintf("   ");
+        printfloat(store);
+        GPIO_WriteBit(GPIOA, GPIO_Pin_4,!GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_4));
+        //vMBPortTimersDelay(1);
+        }
     }
 }
 
