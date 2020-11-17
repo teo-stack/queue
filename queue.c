@@ -64,5 +64,8 @@ QueueState getRear(Queue* queue, int* item){
 
 //--------------delete-queue-----------------//
 void deleteQueue(Queue* queue){
+    for(unsigned int i = 0; i < queue->size; i++ ){
+    free(queue->array + i);
+    }
     free(queue);
 }

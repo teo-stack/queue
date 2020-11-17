@@ -50,7 +50,7 @@ QueueState deQueue(struct Queue* queue, int* value){
     return queuestate;
 }
 
-extern QueueState getRear(struct Queue* queue, int* value){
+QueueState getRear(struct Queue* queue, int* value){
     QueueState queuestate = checkQueue(queue);
     if( queuestate == Empty )
         return queuestate;
@@ -58,10 +58,17 @@ extern QueueState getRear(struct Queue* queue, int* value){
     return queuestate;
 }
 
-extern QueueState getFront(struct Queue* queue, int* value){
+QueueState getFront(struct Queue* queue, int* value){
     QueueState queuestate = checkQueue(queue);
     if( queuestate == Empty )
         return queuestate;
     *value = queue->front->value;
     return queuestate;
+}
+
+void deleteQueue(struct Queue* queue){
+    int temp;
+    while( checkQueue(queue) != Empty )
+    deQueue(queue,&temp);
+    free(queue);
 }

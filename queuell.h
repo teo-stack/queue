@@ -35,6 +35,7 @@ extern QueueState enQueue(struct Queue* queue, int value);
 extern QueueState deQueue(struct Queue* queue, int* value);
 extern QueueState getRear(struct Queue* queue, int* value);
 extern QueueState getFront(struct Queue* queue, int* value);
+extern void deleteQueue(struct Queue* queue);
 #ifdef __cplusplus
 }
 #endif
