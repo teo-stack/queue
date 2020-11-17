@@ -1,5 +1,6 @@
 #include "queue.h"
 
+//-----------create-new-queue----------//
 Queue* createQueue(unsigned int capacity){
     Queue* queue = (Queue*)malloc( sizeof(Queue) );
     queue->capacity = capacity;
@@ -9,7 +10,8 @@ Queue* createQueue(unsigned int capacity){
     return queue;
 }
 
-QueueState isQueueEmpty(Queue* queue){
+//-----------check-queue-empty-or-full----------//
+QueueState checkQueue(Queue* queue){
     QueueState queueState;
     if( queue->size == queue->capacity )
         queueState = Full;
@@ -20,8 +22,9 @@ QueueState isQueueEmpty(Queue* queue){
     return queueState;
 }
 
+//-----------add-new-value-to-queue----------//
 QueueState enQueue(Queue* queue, int item){
-    QueueState queueState = isQueueEmpty(queue);
+    QueueState queueState = checkQueue(queue);
     if( queueState == Full )
         return queueState;
     queue->rear = ( queue->rear + 1 ) % queue->capacity;
@@ -30,8 +33,9 @@ QueueState enQueue(Queue* queue, int item){
     return queueState;
 }
 
+//-----------remove-earliest-updated-value-to-queue----------//
 QueueState deQueue(Queue* queue, int* item){
-    QueueState queueState = isQueueEmpty(queue);
+    QueueState queueState = checkQueue(queue);
     if( queueState == Empty )
         return queueState;
     *item = queue->array[queue->front];
@@ -40,18 +44,25 @@ QueueState deQueue(Queue* queue, int* item){
     return queueState;
 }
 
-QueueState frontQueue(Queue* queue, int* item){
-    QueueState queueState = isQueueEmpty(queue);
+//-----------get-front-value-and-keep----------//
+QueueState getFront(Queue* queue, int* item){
+    QueueState queueState = checkQueue(queue);
     if( queueState == Empty )
         return queueState;
     *item = queue->array[queue->front];
     return queueState;
 }
 
-QueueState rearQueue(Queue* queue, int* item){
-    QueueState queueState = isQueueEmpty(queue);
+//-----------get-rear-value-and-keep----------//
+QueueState getRear(Queue* queue, int* item){
+    QueueState queueState = checkQueue(queue);
     if( queueState == Empty )
         return queueState;
     *item = queue->array[queue->rear];
     return queueState;
+}
+
+//--------------delete-queue-----------------//
+void deleteQueue(Queue* queue){
+    free(queue);
 }

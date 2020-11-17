@@ -5,28 +5,33 @@
 extern "C"
 {
 #endif
+//-----------------libraries--------------//
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
-//type//
+
+//-----------------type------------------//
 typedef enum{
   Empty,
   Available,
   Full
 }QueueState;
-//struct//
+
+//----------------struct-----------------//
 typedef struct{
     unsigned int front, rear, size;
     unsigned int capacity;
     int* array;
 }Queue;
-//fuction//
+
+//----------------fuction----------------//
 extern Queue* createQueue(unsigned int capacity);
-extern QueueState isQueueEmpty(Queue* queue);
+extern QueueState checkQueue(Queue* queue);
 extern QueueState enQueue(Queue* queue, int item);
 extern QueueState deQueue(Queue* queue, int* item);
-extern QueueState frontQueue(Queue* queue, int* item);
-extern QueueState rearQueue(Queue* queue, int* item);
+extern QueueState getFront(Queue* queue, int* item);
+extern QueueState getRear(Queue* queue, int* item);
+extern void deleteQueue(Queue* queue);
 #ifdef __cplusplus
 }
 #endif
